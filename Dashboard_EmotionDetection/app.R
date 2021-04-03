@@ -1,0 +1,365 @@
+
+# library(DT)
+# library(shiny)
+# library(imager)
+# 
+# # generate dummy images
+# #imgNames = c("carf.jpg", "truckf.jpg", "scooterf.jpg", "bikef.jpg", "cars.jpg", "trucks.jpg", "scooters.jpg", "bikes.jpg")
+# imgNames = c(list.files("www"))
+# 
+# if(!dir.exists("www")){
+#   dir.create("www")
+# }
+# 
+# #     observeEvent(input$ImageTable2_rows_selected, {
+# #         output$Image <- renderImage({
+# #             # Read plot2's width and height. These are reactive values, so this
+# #             # expression will re-run whenever these values change.
+# # 
+# #             width  <- session$clientData$output_Image_width
+# #             height <- session$clientData$output_Image_height
+# #             path <- paste0("C:/Users/Marc/Documents/GitHub/CAD_Pneumony_Detection/Test/",df_CAD$`Diagnose Mensch`[input$ImageTable2_rows_selected],"/",df_CAD$Bild[input$ImageTable2_rows_selected] )
+# #             # A temp file to save the output.
+# #             outfile <- tempfile(fileext='.png')
+# # 
+# #             png(outfile, width=width, height=height)
+# #             image <- load.image(path)
+# #             plot(image, axes=FALSE, xlim=c(0,width*5))
+# #             #xlim=c(0,10000), ylim=c(0,10000),
+# #             #xlim=c(0,width*5), ylim=c(0,height*5),
+# # 
+# #             dev.off()
+# # 
+# #             # Return a list containing the filename
+# #             list(src = outfile,
+# #                  width = width * 2.5,
+# #                  height = height * 2.5,
+# #                  alt = "This is alternate text")
+# #         }, deleteFile = TRUE)
+# #         #   })
+# #     })
+# 
+# 
+# 
+# 
+# 
+# for(imgName in imgNames){
+#   browser()
+#   png(file = as.character(paste0("www/", imgName)))
+#   magick::image_read(file)
+#   image <- load.image(file)
+#   plot(image, axes=FALSE, xlim=c(0,width*5))
+#   
+# 
+#   #par(mar = c(0,0,0,0))
+#   #plot(c(0, 1), c(0, 1), ann = F, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
+#   #text(x = 0.5, y = 0.5, imgName,
+#   #     cex = 1.6, col = "black")
+#   dev.off()
+# }
+# 
+# dat <- data.frame(
+#   data = imgNames,
+#   data2 = imgNames
+# )
+# 
+# # ----UI----
+# ui <- fluidPage(
+#   titlePanel("Display two images for each row"),
+#   
+#   mainPanel(
+#     DTOutput("table"),
+#     fluidRow(
+#       column(6, plotOutput("img1")),
+#       column(6, uiOutput("img2"))
+#     )
+#   )
+# )
+# 
+# # ----Server----
+# server = function(input, output, session){
+#   
+#   # Data table with filtering
+#   output$table = DT::renderDT({
+#     datatable(dat, filter = list(position = "top", clear = FALSE), 
+#               selection = list(target = 'row'),
+#               options = list(
+#                 autowidth = TRUE,
+#                 pageLength = 2,
+#                 lengthMenu = c(2, 4)
+#               ))
+#   })
+#   
+#   # Reactive call that only renders images for selected rows 
+#   df <- reactive({
+#     dat[input[["table_rows_selected"]], ]
+#   })
+#   
+#   # Front image output
+#   output$img1 = renderUI({
+#     imgfr <- lapply(df()$frontimage, function(file){
+#       tags$div(
+#         tags$img(src=file, width="100%", height="100%"),
+#         tags$script(src="titlescript.js")
+#       )
+#     })
+#     do.call(tagList, imgfr)
+#   })
+#   
+#   # Side image output
+#   output$img2 = renderUI({
+#     imgside <- lapply(df()$sideimage, function(file){
+#       tags$div(
+#         tags$img(src=file, width="100%", height="100%"),
+#         tags$script(src="titlescript.js")
+#       )
+#     })
+#     do.call(tagList, imgside)
+#   })
+#   
+# }
+# # ----APP----    
+# # Run the application 
+# shinyApp(ui, server)
+
+
+# #
+#
+# library(DT)
+# library(shiny)
+#
+# # generate dummy images
+# #imgNames = c("carf.jpg", "truckf.jpg", "scooterf.jpg", "bikef.jpg", "cars.jpg", "trucks.jpg", "scooters.jpg", "bikes.jpg")
+# imgNames <- list.files(path="www")
+#
+# if(!dir.exists("www")){
+#   dir.create("www")
+# }
+#
+# for(imgName in imgNames){
+#   png(file = paste0("www/", imgName))
+#   par(mar = c(0,0,0,0))
+#   plot(c(0, 1), c(0, 1), ann = F, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
+#   text(x = 0.5, y = 0.5, imgName,
+#        cex = 1.6, col = "black")
+#   dev.off()
+# }
+#
+# dat <- data.frame(image_var = imgNames,image_var2 = imgNames)
+# # ----UI----
+# ui <- fluidPage(
+#   titlePanel("Display two images for each row"),
+#
+#   mainPanel(
+#     DTOutput("table"),
+#     fluidRow(
+#       column(6, plotOutput("image"))
+#     )
+#   )
+# )
+#
+# # ----Server----
+# server = function(input, output, session){
+#
+#   # Data table with filtering
+#   output$table = DT::renderDT({
+#     datatable(dat, filter = list(position = "top", clear = FALSE),
+#               selection = list(target = 'row'),
+#               options = list(
+#                 autowidth = TRUE,
+#                 pageLength = 2,
+#                 lengthMenu = c(2, 4)
+#               ))
+#   })
+#
+#   # Reactive call that only renders images for selected rows
+#   df <- reactive({
+#     dat[input[["table_rows_selected"]], ]
+#   })
+#
+#   # Side image output
+#   output$image = renderImage({
+#     img <- lapply(df()$image_var, function(file){
+#       tags$div(
+#         tags$img(src=file, width="100%", height="100%"),
+#         #tags$script(src="titlescript.js")
+#       )
+#     })
+#     do.call(tagList, img)
+#   })
+#
+# }
+# # ----APP----
+# # Run the application
+# shinyApp(ui, server)
+
+
+
+
+
+
+
+
+library(shiny)
+library(shinyjs)
+library(shinydashboard)
+library(imager)
+library(DT)
+library(reticulate)
+library(dplyr)
+library(av)
+library(plotly)
+
+ui <- dashboardPage(
+  #Header Content
+  dashboardHeader(title = "Emotion detection App"),
+  #Sidebar Content
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Landing Page", tabName = "landing", icon = icon("th")),
+      menuItem("Bilder", tabName = "images", icon = icon("th"))
+    )
+  ),
+  #Body Content
+  dashboardBody(
+    tabItems(
+      tabItem(tabName = "landing",
+              h2("Landingpage"),
+              box(width = 12,
+                  box(width = 12,actionButton("loadButton", label = "Dateien Laden", width = '100%')),
+                  box(width = 12,uiOutput('my_audio')),
+                  box(width = 12,actionButton("GooglestartButton", label = "GoogleNet CAD starten", width = '100%')),
+                  box(width = 12,actionButton("VGGstartButton", label = "VGG16 CAD starten", width = '100%')),
+                  box(width = 12, plotlyOutput("plotforecast"),title = "Emotionwerte grafisch"),
+              ),
+              box(width = 12,DTOutput("FileTable"),title = "Dateiuebersicht tabellarisch"),
+              box(width = 12,DTOutput("CADTable"),title = "Ergebnisse CAD tabellarisch")
+      ),
+      tabItem(tabName = "images",
+              h2("Images"),
+              box(width = 12,DTOutput("ImageTable2"),title = "Bilderuebersicht tabellarisch"),
+              box(width = 12,plotOutput("Image")
+              )
+              
+              
+      )
+    )
+  )
+)
+
+
+get_audio_tag <- function(filename) {
+  tags$audio(src = filename,
+             type = "audio/mp3",
+             controls = "controls")
+}
+
+#
+server <- function(input, output, session) {
+  
+  
+
+  #sampleplot
+  output$plotforecast <- renderPlotly({
+    #sampledata for plot
+    data_sample <- read.csv2("data_sample.csv", sep=",")
+    data_sample <- data_sample[1190:1230,]
+    data_sample$Price <- 30
+    fig <- plot_ly(data_sample, x=~X, y = ~Price, name = 'Value', type = 'scatter', mode = 'lines')
+
+    fig <- fig %>% add_trace(y = ~meanf, name = 'Anger', mode = 'lines')
+    fig <- fig %>% add_trace(y = ~naive, name = 'Happy', mode = 'lines')
+    fig <- fig %>% add_trace(y = ~snaive, name = 'Disgust', mode = 'lines')
+    fig <- fig %>% add_trace(y = ~rwf, name = 'Trust', mode = 'lines')
+    fig <- fig %>% add_trace(y = ~ses, name = 'Annoyed', mode = 'lines')
+    fig <- fig %>% add_trace(y = ~holt, name = 'Sad', mode = 'lines')
+    fig <- fig %>% add_trace(y = ~splinef, name = 'Hungry', mode = 'lines')
+    fig <- fig %>% add_trace(y = ~thetaf, name = 'Hangry', mode = 'lines')
+    fig
+  })
+  
+  
+  get_audio_tag<-function(filename){tags$audio(src = filename,
+                                               type ="audio/mp3", controls = NA)}
+  
+  #set global_env variables
+  path <- paste0(getwd(),"/www/data")
+  file_selected <- NA
+  memory.limit(size = 250000)
+
+  #fileimport
+  observeEvent(input$loadButton, {
+    #list & load files
+    files <- list.files(path)
+    files_list <- list()
+    df_files <- data.frame("File" = character())
+    for(file in 1:length(files)){
+      file_path <- paste0(path,"/",files[file])
+      df_files[,1] <- as.character(df_files[,1])
+      df_files <- rbind(df_files, files[file])
+      names(df_files) <- "Datei"
+    }
+
+    df_files <<- df_files
+    output$FileTable <- renderDataTable(df_files,selection=list(mode="single"),options= list(scrollY = TRUE,pageLength = 5))
+  })
+  
+  #wav to app import
+  observeEvent(input$FileTable_rows_selected, {
+    file_selected <- paste0("data/",df_files$Datei[input$FileTable_rows_selected])
+    
+    #export everything to global env.
+    allglobal <- function() {
+      lss <- ls(envir = parent.frame())
+      for (i in lss) {
+        assign(i, get(i, envir = parent.frame()), envir = .GlobalEnv)
+      }
+    }
+    allglobal()
+    wav_name = file_selected
+    # output$my_audio <-renderUI(get_audio_tag("questionF.mp3"))
+    output$my_audio <-renderUI(get_audio_tag(wav_name))
+    output$audiotag<-renderUI(get_audio_tag("tempwav.wav")) #starting wave file    
+    output$audiotag<-renderUI(get_audio_tag(wavname))
+    
+    #create new dir
+    unlink("image_dir", recursive=TRUE)
+    dir.create("image_dir")
+    browser()
+    av_video_images("data/",df_files$Datei[input$FileTable_rows_selected], destdir = "image_dir", format = "jpg", fps = NULL)
+
+
+  })
+  
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  observeEvent(input$VGGstartButton, {
+    source_python("model_skript_vgg.py")
+    df_CAD <- check_images("C:/Users/Marc/Documents/GitHub/CAD_Pneumony_Detection")
+    df_CAD$classification <- as.numeric(df_CAD$classification)
+    df_CAD$classification <- ifelse(df_CAD$classification == 0, "Anomaly", "Normal")
+    df_CAD$percentages_0 <- round(as.numeric(df_CAD$percentages_0) * 100, 2)
+    df_CAD$percentages_1 <- round(as.numeric(df_CAD$percentages_1) * 100, 2)
+    names(df_CAD) <- c("Bild", "Diagnose CAD", "Ergebnis Anomaly", "Ergebnis Normal")
+    df_CAD <- left_join(df_images, df_CAD, by="Bild")
+    df_CAD$Ergebnis <- ifelse(df_CAD$`Diagnose Mensch`==df_CAD$`Diagnose CAD`, "identisch", "unterschiedlich")
+    output$CADTable <- renderDataTable(df_CAD,options= list(scrollY = TRUE,pageLength = 5))
+    output$ImageTable2 <- renderDataTable(df_CAD,options= list(scrollY = TRUE,pageLength = 5))
+    
+  })
+  
+}
+
+shinyApp(ui, server)

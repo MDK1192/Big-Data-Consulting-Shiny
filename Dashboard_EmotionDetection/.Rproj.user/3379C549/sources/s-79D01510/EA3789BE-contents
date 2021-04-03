@@ -1,0 +1,42 @@
+library(shiny)
+# test set ----
+ui <- fluidPage(
+    textInput('my_music','path:',value="questionF"),
+    actionButton("ok", "Okay"),
+    uiOutput('my_audio')
+    # tags$audio(src = "questionF.mp3", type = "audio/mp3")
+)
+
+get_audio_tag <- function(filename) {
+    tags$audio(src = filename,
+               type = "audio/mp3",
+               controls = "controls")
+}
+
+server <- function(input, output, session){
+    
+    get_audio_tag<-function(filename){tags$audio(src = filename,
+                                                 type ="audio/wav", controls = NA)}
+    wave_name<-function(n,p1,f1,p2,f2,p3,f3,l){
+        paste0( paste("sound","num",n, "w1",p1,f1,"w2", p2,f2,"w3",p3,f3,"lev",
+                      gsub("\\.","_",l), sep="_"), ".wav")
+    }
+    
+    
+    # Render the audio player
+    observeEvent(input$ok, {
+        
+        wav_name = input$my_music
+        # output$my_audio <-renderUI(get_audio_tag("questionF.mp3"))
+        output$my_audio <-renderUI(get_audio_tag(wav_name))
+        
+    })
+    
+    wname<-wave_name("1","2","3","4","5","6","1","1")
+    
+    output$audiotag<-renderUI(get_audio_tag("tempwav.wav")) #starting wave file    
+    output$audiotag<-renderUI(get_audio_tag(wavname))
+    
+}
+
+shinyApp(ui = ui, server = server)
