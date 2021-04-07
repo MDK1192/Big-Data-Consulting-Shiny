@@ -1,207 +1,4 @@
-
-# library(DT)
-# library(shiny)
-# library(imager)
-# 
-# # generate dummy images
-# #imgNames = c("carf.jpg", "truckf.jpg", "scooterf.jpg", "bikef.jpg", "cars.jpg", "trucks.jpg", "scooters.jpg", "bikes.jpg")
-# imgNames = c(list.files("www"))
-# 
-# if(!dir.exists("www")){
-#   dir.create("www")
-# }
-# 
-# #     observeEvent(input$ImageTable2_rows_selected, {
-# #         output$Image <- renderImage({
-# #             # Read plot2's width and height. These are reactive values, so this
-# #             # expression will re-run whenever these values change.
-# # 
-# #             width  <- session$clientData$output_Image_width
-# #             height <- session$clientData$output_Image_height
-# #             path <- paste0("C:/Users/Marc/Documents/GitHub/CAD_Pneumony_Detection/Test/",df_CAD$`Diagnose Mensch`[input$ImageTable2_rows_selected],"/",df_CAD$Bild[input$ImageTable2_rows_selected] )
-# #             # A temp file to save the output.
-# #             outfile <- tempfile(fileext='.png')
-# # 
-# #             png(outfile, width=width, height=height)
-# #             image <- load.image(path)
-# #             plot(image, axes=FALSE, xlim=c(0,width*5))
-# #             #xlim=c(0,10000), ylim=c(0,10000),
-# #             #xlim=c(0,width*5), ylim=c(0,height*5),
-# # 
-# #             dev.off()
-# # 
-# #             # Return a list containing the filename
-# #             list(src = outfile,
-# #                  width = width * 2.5,
-# #                  height = height * 2.5,
-# #                  alt = "This is alternate text")
-# #         }, deleteFile = TRUE)
-# #         #   })
-# #     })
-# 
-# 
-# 
-# 
-# 
-# for(imgName in imgNames){
-#   browser()
-#   png(file = as.character(paste0("www/", imgName)))
-#   magick::image_read(file)
-#   image <- load.image(file)
-#   plot(image, axes=FALSE, xlim=c(0,width*5))
-#   
-# 
-#   #par(mar = c(0,0,0,0))
-#   #plot(c(0, 1), c(0, 1), ann = F, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
-#   #text(x = 0.5, y = 0.5, imgName,
-#   #     cex = 1.6, col = "black")
-#   dev.off()
-# }
-# 
-# dat <- data.frame(
-#   data = imgNames,
-#   data2 = imgNames
-# )
-# 
-# # ----UI----
-# ui <- fluidPage(
-#   titlePanel("Display two images for each row"),
-#   
-#   mainPanel(
-#     DTOutput("table"),
-#     fluidRow(
-#       column(6, plotOutput("img1")),
-#       column(6, uiOutput("img2"))
-#     )
-#   )
-# )
-# 
-# # ----Server----
-# server = function(input, output, session){
-#   
-#   # Data table with filtering
-#   output$table = DT::renderDT({
-#     datatable(dat, filter = list(position = "top", clear = FALSE), 
-#               selection = list(target = 'row'),
-#               options = list(
-#                 autowidth = TRUE,
-#                 pageLength = 2,
-#                 lengthMenu = c(2, 4)
-#               ))
-#   })
-#   
-#   # Reactive call that only renders images for selected rows 
-#   df <- reactive({
-#     dat[input[["table_rows_selected"]], ]
-#   })
-#   
-#   # Front image output
-#   output$img1 = renderUI({
-#     imgfr <- lapply(df()$frontimage, function(file){
-#       tags$div(
-#         tags$img(src=file, width="100%", height="100%"),
-#         tags$script(src="titlescript.js")
-#       )
-#     })
-#     do.call(tagList, imgfr)
-#   })
-#   
-#   # Side image output
-#   output$img2 = renderUI({
-#     imgside <- lapply(df()$sideimage, function(file){
-#       tags$div(
-#         tags$img(src=file, width="100%", height="100%"),
-#         tags$script(src="titlescript.js")
-#       )
-#     })
-#     do.call(tagList, imgside)
-#   })
-#   
-# }
-# # ----APP----    
-# # Run the application 
-# shinyApp(ui, server)
-
-
-# #
-#
-# library(DT)
-# library(shiny)
-#
-# # generate dummy images
-# #imgNames = c("carf.jpg", "truckf.jpg", "scooterf.jpg", "bikef.jpg", "cars.jpg", "trucks.jpg", "scooters.jpg", "bikes.jpg")
-# imgNames <- list.files(path="www")
-#
-# if(!dir.exists("www")){
-#   dir.create("www")
-# }
-#
-# for(imgName in imgNames){
-#   png(file = paste0("www/", imgName))
-#   par(mar = c(0,0,0,0))
-#   plot(c(0, 1), c(0, 1), ann = F, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
-#   text(x = 0.5, y = 0.5, imgName,
-#        cex = 1.6, col = "black")
-#   dev.off()
-# }
-#
-# dat <- data.frame(image_var = imgNames,image_var2 = imgNames)
-# # ----UI----
-# ui <- fluidPage(
-#   titlePanel("Display two images for each row"),
-#
-#   mainPanel(
-#     DTOutput("table"),
-#     fluidRow(
-#       column(6, plotOutput("image"))
-#     )
-#   )
-# )
-#
-# # ----Server----
-# server = function(input, output, session){
-#
-#   # Data table with filtering
-#   output$table = DT::renderDT({
-#     datatable(dat, filter = list(position = "top", clear = FALSE),
-#               selection = list(target = 'row'),
-#               options = list(
-#                 autowidth = TRUE,
-#                 pageLength = 2,
-#                 lengthMenu = c(2, 4)
-#               ))
-#   })
-#
-#   # Reactive call that only renders images for selected rows
-#   df <- reactive({
-#     dat[input[["table_rows_selected"]], ]
-#   })
-#
-#   # Side image output
-#   output$image = renderImage({
-#     img <- lapply(df()$image_var, function(file){
-#       tags$div(
-#         tags$img(src=file, width="100%", height="100%"),
-#         #tags$script(src="titlescript.js")
-#       )
-#     })
-#     do.call(tagList, img)
-#   })
-#
-# }
-# # ----APP----
-# # Run the application
-# shinyApp(ui, server)
-
-
-
-
-
-
-
-
 library(shiny)
-library(shinyjs)
 library(shinydashboard)
 library(imager)
 library(DT)
@@ -217,7 +14,7 @@ ui <- dashboardPage(
   dashboardSidebar(
     sidebarMenu(
       menuItem("Landing Page", tabName = "landing", icon = icon("th")),
-      menuItem("Bilder", tabName = "images", icon = icon("th"))
+      menuItem("Results", tabName = "results", icon = icon("th"))
     )
   ),
   #Body Content
@@ -226,17 +23,32 @@ ui <- dashboardPage(
       tabItem(tabName = "landing",
               h2("Landingpage"),
               box(width = 12,
-                  box(width = 12,actionButton("loadButton", label = "Dateien Laden", width = '100%')),
-                  box(width = 12,uiOutput('my_audio')),
-                  box(width = 12,actionButton("GooglestartButton", label = "GoogleNet CAD starten", width = '100%')),
-                  box(width = 12,actionButton("VGGstartButton", label = "VGG16 CAD starten", width = '100%')),
-                  box(width = 12, plotlyOutput("plotforecast"),title = "Emotionwerte grafisch"),
+                  box(width = 4,  radioButtons("genderChoice", label = h3("Radio buttons"),
+                                                choices = list("Male" = 1, "Female" = 2), 
+                                                selected = 1)),
+                  box(width = 8,
+                      actionButton("loadButton", label = "Load Data", width = '100%'),
+                      tags$br(),
+                      tags$br(),
+                      tags$br(),
+                      actionButton("startButton", label = "Start Emotion Detection", width = '100%')),
+                  box(width = 12,
+                      box(width = 6,DTOutput("FileTable"),title = "Dateiuebersicht tabellarisch"),
+                      box(width = 4,uiOutput('my_audio'))),
+                  box(width = 12,
+                      box(width = 6,DTOutput("ImageTable"),title = "Bilderuebersicht tabellarisch"),
+                      box(width = 6,uiOutput('my_image'))),
+                  #box(width = 12,tags$img(src="image_dir/image_000001.jpg")),
+                  #box(width = 12,actionButton("GooglestartButton", label = "GoogleNet CAD starten", width = '100%')),
+                  #box(width = 12,actionButton("VGGstartButton", label = "VGG16 CAD starten", width = '100%')),
+
+
               ),
-              box(width = 12,DTOutput("FileTable"),title = "Dateiuebersicht tabellarisch"),
-              box(width = 12,DTOutput("CADTable"),title = "Ergebnisse CAD tabellarisch")
       ),
-      tabItem(tabName = "images",
-              h2("Images"),
+      tabItem(tabName = "results",
+              h2("Results"),
+              box(width = 12, plotlyOutput("emotionovertime"),title = "Ergebnisse grafisch"),
+              box(width = 12, plotlyOutput("emotionsummarised"),title = "Ergebnisse grafisch"),
               box(width = 12,DTOutput("ImageTable2"),title = "Bilderuebersicht tabellarisch"),
               box(width = 12,plotOutput("Image")
               )
@@ -254,13 +66,16 @@ get_audio_tag <- function(filename) {
              controls = "controls")
 }
 
+get_image_tag <- function(imagename) {
+  tags$img(width="100%", height="100%", src = imagename)
+}
+
 #
 server <- function(input, output, session) {
   
-  
 
-  #sampleplot
-  output$plotforecast <- renderPlotly({
+  #sampleplot 1
+  output$emotionovertime <- renderPlotly({
     #sampledata for plot
     data_sample <- read.csv2("data_sample.csv", sep=",")
     data_sample <- data_sample[1190:1230,]
@@ -278,16 +93,34 @@ server <- function(input, output, session) {
     fig
   })
   
+  #sampleplot2
+  output$emotionsummarised <- renderPlotly({
+    
+    Animals <- c("Anger", "Happy", "Disgust", "Trust", "Annoyed", "Sad", "Hungry","Hangry")
+    SF_Zoo <- c(20, 14, 23,14, 16, 23,18, 11)
+    LA_Zoo <- c(12, 18, 17,20, 10, 21,21, 12)
+    data <- data.frame(Animals, SF_Zoo, LA_Zoo)
+    
+    fig <- plot_ly(data, x = ~Animals, y = ~SF_Zoo, type = 'bar', name = 'Audio')
+    fig <- fig %>% add_trace(y = ~LA_Zoo, name = 'Video')
+    fig <- fig %>% layout(yaxis = list(title = 'Count'), barmode = 'group')
+    
+    fig
   
+  })
+  
+  #helper functions
   get_audio_tag<-function(filename){tags$audio(src = filename,
                                                type ="audio/mp3", controls = NA)}
+  get_image_tag<-function(imagename){
+    tags$img(width="100%", height="100%", src = imagename)}
   
-  #set global_env variables
+  #set global_env variables and memory limit
   path <- paste0(getwd(),"/www/data")
   file_selected <- NA
   memory.limit(size = 250000)
 
-  #fileimport
+  #file overview
   observeEvent(input$loadButton, {
     #list & load files
     files <- list.files(path)
@@ -304,40 +137,77 @@ server <- function(input, output, session) {
     output$FileTable <- renderDataTable(df_files,selection=list(mode="single"),options= list(scrollY = TRUE,pageLength = 5))
   })
   
-  #wav to app import
+  #wav & video to app import
   observeEvent(input$FileTable_rows_selected, {
     file_selected <- paste0("data/",df_files$Datei[input$FileTable_rows_selected])
-    
-    #export everything to global env.
-    allglobal <- function() {
-      lss <- ls(envir = parent.frame())
-      for (i in lss) {
-        assign(i, get(i, envir = parent.frame()), envir = .GlobalEnv)
-      }
-    }
-    allglobal()
-    wav_name = file_selected
-    # output$my_audio <-renderUI(get_audio_tag("questionF.mp3"))
-    output$my_audio <-renderUI(get_audio_tag(wav_name))
-    output$audiotag<-renderUI(get_audio_tag("tempwav.wav")) #starting wave file    
-    output$audiotag<-renderUI(get_audio_tag(wavname))
-    
-    #create new dir
-    unlink("image_dir", recursive=TRUE)
-    dir.create("image_dir")
-    browser()
-    av_video_images("data/",df_files$Datei[input$FileTable_rows_selected], destdir = "image_dir", format = "jpg", fps = NULL)
+    if(grepl("\\.wav$", df_files$Datei[input$FileTable_rows_selected])){
 
+      wav_name = file_selected
+      # output$my_audio <-renderUI(get_audio_tag("questionF.mp3"))
+      output$my_audio <-renderUI(get_audio_tag(wav_name))
+      output$audiotag<-renderUI(get_audio_tag("tempwav.wav")) #starting wave file    
+      output$audiotag<-renderUI(get_audio_tag(wavname))
+      output$my_image <-renderUI(tags$h1("")) #get_image_tag("placeholder.jpg")
+      df_placeholder <- data.frame("Bild" = as.character())
+      output$ImageTable <- renderDataTable(df_placeholder,selection=list(mode="single"),options= list(scrollY = TRUE,pageLength = 5))
+    }
+
+
+    #actions for video
+    if(grepl("\\.mp4$", df_files$Datei[input$FileTable_rows_selected])){
+
+      #extract images & wav from mp4
+      av_video_images(paste0("www/data/",df_files$Datei[input$FileTable_rows_selected]), destdir = "www/image_dir", format = "jpg", fps = 5)
+      #Define the file name that will be deleted
+      unlink("www/data/Temp_Current_Video")
+      dir.create("www/data/Temp_Current_Video")
+      if (file.exists("current_video.wav")) {file.remove("current_video.wav")}
+      
+      av_audio_convert(paste0("www/data/",df_files$Datei[input$FileTable_rows_selected]), 'current_video.wav', channels = NULL)
+      file.copy("current_video.wav", "www/data/Temp_Current_Video/current_video.wav")
+      images <- list.files("www/image_dir")
+      files_list <- list()
+      df_images <- data.frame("Image" = character())
+      for(file in 1:length(images)){
+        image_path <- paste0(path,"/",images[file])
+        df_images[,1] <- as.character(df_images[,1])
+        df_images <- rbind(df_images, images[file])
+        names(df_images) <- "Bild"
+      }
+      #export everything to global env.
+      allglobal <- function() {
+        lss <- ls(envir = parent.frame())
+        for (i in lss) {
+          assign(i, get(i, envir = parent.frame()), envir = .GlobalEnv)
+        }
+      }
+      allglobal()
+      output$ImageTable <- renderDataTable(df_images,selection=list(mode="single"),options= list(scrollY = TRUE,pageLength = 5))
+      file_selected <- "data/Temp_Current_Video/current_video.wav"
+      wav_name = file_selected
+      # output$my_audio <-renderUI(get_audio_tag("questionF.mp3"))
+      output$my_audio <-renderUI(get_audio_tag(wav_name))
+      output$audiotag<-renderUI(get_audio_tag("tempwav.wav")) #starting wave file    
+      output$audiotag<-renderUI(get_audio_tag(wavname))
+    }
+    
 
   })
   
+  #Loading  & showing images improted from video
+  observeEvent(input$ImageTable_rows_selected, {
+    image_selected <- paste0("image_dir/",df_images$Bild[input$ImageTable_rows_selected])
+    img_name = image_selected
+    output$my_image <-renderUI(get_image_tag(img_name))
+    output$imagetag<-renderUI(get_image_tag("tempimg.jpg")) #starting jpg file    
+    output$imagetag<-renderUI(get_image_tag(imgname))
+  })
+  
+  
+  
+  
+  
 
-  
-  
-  
-  
-  
-  
   
   
   

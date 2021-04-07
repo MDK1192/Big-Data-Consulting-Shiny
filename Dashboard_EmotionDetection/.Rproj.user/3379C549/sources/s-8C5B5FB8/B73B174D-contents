@@ -1,0 +1,174 @@
+library(shiny)
+library(shinyFiles)
+library(shinydashboard)
+library(imager)
+library(DT)
+library(reticulate)
+library(dplyr)
+
+ui <- dashboardPage(
+  #Header Content
+  dashboardHeader(title = "CAD"),
+  #Sidebar Content
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Landing Page", tabName = "landing", icon = icon("th")),
+      menuItem("Bilder", tabName = "images", icon = icon("th"))
+    )
+  ),
+  #Body Content
+  dashboardBody(
+    tabItems(
+      tabItem(tabName = "landing",
+              h2("Landingpage"),
+              box(width = 12,
+                  box(width = 2,shinyDirButton("dir", "Dateien wählen", "Upload", width = '100%')),
+                  box(width = 10,actionButton("loadButton", label = "Bilder Laden", width = '100%')),
+                  box(width = 12,actionButton("GooglestartButton", label = "GoogleNet CAD starten", width = '100%')),
+                  box(width = 12,actionButton("VGGstartButton", label = "VGG16 CAD starten", width = '100%')),
+                  box(width = 12,verbatimTextOutput("dir", placeholder = TRUE)),
+              ),
+              box(width = 12,DTOutput("ImageTable"),title = "Bilderuebersicht tabellarisch"),
+              box(width = 12,DTOutput("CADTable"),title = "Ergebnisse CAD tabellarisch")
+      ),
+      tabItem(tabName = "images",
+              h2("Images"),
+              box(width = 12,DTOutput("ImageTable2"),title = "Bilderuebersicht tabellarisch"),
+              box(width = 12,plotOutput("Image")
+                  )
+
+
+      )
+    )
+  )
+)
+
+#
+server <- function(input, output, session) {
+
+  memory.limit(size = 250000)
+  shinyDirChoose(
+    input,
+    'dir',
+    roots = c(home = getwd()),
+    filetypes = c('', 'jpg', 'jpeg', 'png')
+  )
+
+  global <- reactiveValues(datapath = getwd())
+
+  dir <- reactive(input$dir)
+
+  output$dir <- renderText({
+    global$datapath
+  })
+
+
+  observeEvent(ignoreNULL = TRUE,
+               eventExpr = {
+                 input$dir
+               },
+               handlerExpr = {
+                 if (!"path" %in% names(dir())) return()
+                 home <- normalizePath("~")
+                 global$datapath <- getwd()
+
+                 Normal_path <- paste0(global$datapath,"/Test/Normal")
+                 Anomaly_path <- paste0(global$datapath,"/Test/Anomaly")
+                 Normal_path <<- gsub("\\", "/", as.character(Normal_path), fixed=TRUE)
+                 Anomaly_path <<- gsub("\\", "/", as.character(Anomaly_path), fixed=TRUE)
+
+               })
+observeEvent(input$loadButton, {
+    #save recommendation
+
+    files_Normal <- list.files(path = Normal_path)
+    files_Anomaly <- list.files(path = Anomaly_path)
+    Normal_images <- list()
+    Anomaly_images <- list()
+    df_images <- data.frame("Bild" = character(), "Diagnose Mensch" = character())
+    for(file in 1:length(files_Normal)){
+      file_path <- paste0(Normal_path,"/",files_Normal[file])
+      Normal_images[[file]] <- load.image(file_path)
+      normal_vector <- c(files_Normal[file],"Normal")
+      df_images[,1] <- as.character(df_images[,1])
+      df_images[,2] <- as.character(df_images[,2])
+      df_images <- rbind(df_images, normal_vector)
+      names(df_images) <- c("Bild", "Diagnose Mensch")
+    }
+    for(file in 1:length(files_Anomaly)){
+      file_path <- paste0(Anomaly_path,"/",files_Anomaly[file])
+      Anomaly_images[[file]] <- load.image(file_path)
+      anomaly_vector <- c(files_Anomaly[file],"Anomaly")
+      df_images[,1] <- as.character(df_images[,1])
+      df_images[,2] <- as.character(df_images[,2])
+      df_images <- rbind(df_images, anomaly_vector)
+      names(df_images) <- c("Bild", "Diagnose Mensch")
+    }
+    Normal_images <<- Normal_images
+    Anomaly_images <<- Anomaly_images
+    df_images <<- df_images
+    output$ImageTable <- renderDataTable(df_images,options= list(scrollY = TRUE,pageLength = 5))
+    output$ImageTable2 <- renderDataTable(df_images,selection=list(mode="single"),options= list(scrollY = TRUE,pageLength = 5))
+  })
+
+observeEvent(input$ImageTable2_rows_selected, {
+output$Image <- renderImage({
+  # Read plot2's width and height. These are reactive values, so this
+  # expression will re-run whenever these values change.
+  
+  width  <- session$clientData$output_Image_width
+  height <- session$clientData$output_Image_height
+  path <- paste0("C:/Users/Marc/Documents/GitHub/CAD_Pneumony_Detection/Test/",df_CAD$`Diagnose Mensch`[input$ImageTable2_rows_selected],"/",df_CAD$Bild[input$ImageTable2_rows_selected] )
+  # A temp file to save the output.
+  outfile <- tempfile(fileext='.png')
+  
+  png(outfile, width=width, height=height)
+  image <- load.image(path)
+  plot(image, axes=FALSE, xlim=c(0,width*5))
+  #xlim=c(0,10000), ylim=c(0,10000),
+  #xlim=c(0,width*5), ylim=c(0,height*5),
+
+  dev.off()
+  
+  # Return a list containing the filename
+  list(src = outfile,
+       width = width * 2.5,
+       height = height * 2.5,
+       alt = "This is alternate text")
+}, deleteFile = TRUE)
+#   })
+})
+  
+observeEvent(input$GooglestartButton, {
+    source_python("model_skript_google.py")
+    df_CAD <- check_images("C:/Users/Marc/Documents/GitHub/CAD_Pneumony_Detection")
+    df_CAD$classification <- as.numeric(df_CAD$classification)
+    df_CAD$classification <- ifelse(df_CAD$classification == 0, "Anomaly", "Normal")
+    df_CAD$percentages_0 <- round(as.numeric(df_CAD$percentages_0) * 100, 2)
+    df_CAD$percentages_1 <- round(as.numeric(df_CAD$percentages_1) * 100, 2)
+    names(df_CAD) <- c("Bild", "Diagnose CAD", "Ergebnis Anomaly", "Ergebnis Normal")
+    df_CAD <- left_join(df_images, df_CAD, by="Bild")
+    df_CAD$Ergebnis <- ifelse(df_CAD$`Diagnose Mensch`==df_CAD$`Diagnose CAD`, "identisch", "unterschiedlich")
+    output$CADTable <- renderDataTable(df_CAD,options= list(scrollY = TRUE,pageLength = 5))
+    output$ImageTable2 <- renderDataTable(df_CAD,options= list(scrollY = TRUE,pageLength = 5))
+    
+  })
+
+observeEvent(input$VGGstartButton, {
+  source_python("model_skript_vgg.py")
+  df_CAD <- check_images("C:/Users/Marc/Documents/GitHub/CAD_Pneumony_Detection")
+  df_CAD$classification <- as.numeric(df_CAD$classification)
+  df_CAD$classification <- ifelse(df_CAD$classification == 0, "Anomaly", "Normal")
+  df_CAD$percentages_0 <- round(as.numeric(df_CAD$percentages_0) * 100, 2)
+  df_CAD$percentages_1 <- round(as.numeric(df_CAD$percentages_1) * 100, 2)
+  names(df_CAD) <- c("Bild", "Diagnose CAD", "Ergebnis Anomaly", "Ergebnis Normal")
+  df_CAD <- left_join(df_images, df_CAD, by="Bild")
+  df_CAD$Ergebnis <- ifelse(df_CAD$`Diagnose Mensch`==df_CAD$`Diagnose CAD`, "identisch", "unterschiedlich")
+  output$CADTable <- renderDataTable(df_CAD,options= list(scrollY = TRUE,pageLength = 5))
+  output$ImageTable2 <- renderDataTable(df_CAD,options= list(scrollY = TRUE,pageLength = 5))
+  
+})
+
+}
+
+shinyApp(ui, server)
