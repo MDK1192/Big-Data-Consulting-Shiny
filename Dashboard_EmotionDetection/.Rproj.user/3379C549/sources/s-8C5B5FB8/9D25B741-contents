@@ -1,4 +1,0 @@
-library(shiny)
-ui <- fluidPage(img(src = 'Screenshot (8).png'))
-server <- function(input, output) {}
-shinyAppDir(".")

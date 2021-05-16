@@ -1,8 +1,10 @@
 library(shiny)
+library(shinyFiles)
 library(shinydashboard)
+library(reticulate)
 library(imager)
 library(DT)
-library(reticulate)
+
 library(dplyr)
 library(av)
 library(plotly)
@@ -14,7 +16,8 @@ ui <- dashboardPage(
   dashboardSidebar(
     sidebarMenu(
       menuItem("Landing Page", tabName = "landing", icon = icon("th")),
-      menuItem("Results", tabName = "results", icon = icon("th"))
+      menuItem("Results", tabName = "results", icon = icon("th")),
+      menuItem("Visualization", tabName = "visualization", icon = icon("th"))
     )
   ),
   #Body Content
@@ -23,13 +26,17 @@ ui <- dashboardPage(
       tabItem(tabName = "landing",
               h2("Landingpage"),
               box(width = 12,
-                  box(width = 4,  radioButtons("genderChoice", label = h3("Radio buttons"),
-                                                choices = list("Male" = 1, "Female" = 2), 
-                                                selected = 1)),
+                  box(width = 4,
+                      shinyDirButton("dir", "Dateien wählen", "Upload", width = '100%'),
+                      verbatimTextOutput("dir", placeholder = TRUE),
+                      #fileInput("file", label = h3("Choose custom path")),
+                      #verbatimTextOutput("value")
+                      ),
                   box(width = 8,
-                      actionButton("loadButton", label = "Load Data", width = '100%'),
+                      actionButton("loadButton", label = "Load Data",width = '100%'),
+                      #actionButton("transformButton", label = "Transform Data",width = '100%'),
                       tags$br(),
-                      tags$br(),
+                      actionButton("testButton", label = "Load Testdata", width = '100%'),
                       tags$br(),
                       actionButton("startButton", label = "Start Emotion Detection", width = '100%')),
                   box(width = 12,
@@ -47,13 +54,19 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "results",
               h2("Results"),
-              box(width = 12, plotlyOutput("emotionovertime"),title = "Ergebnisse grafisch"),
-              box(width = 12, plotlyOutput("emotionsummarised"),title = "Ergebnisse grafisch"),
+              box(width = 12,DTOutput("VoiceEmotion"),title = "Bilderuebersicht tabellarisch"),
+              box(width = 12,DTOutput("ImageEmotion"),title = "Bilderuebersicht tabellarisch"),
               box(width = 12,DTOutput("ImageTable2"),title = "Bilderuebersicht tabellarisch"),
               box(width = 12,plotOutput("Image")
               )
-              
-              
+      ),
+      tabItem(tabName = "visualization",
+              h2("Visualizations"),
+              box(width = 12, 
+                  actionButton("showemotionovertime", label = "Show Emotion over Time",width = '100%'),
+                  plotlyOutput("emotionovertime"),title = "Ergebnisse grafisch"),
+              box(width = 12, plotlyOutput("emotionsummarised"),title = "Ergebnisse grafisch"),
+
       )
     )
   )
@@ -72,7 +85,38 @@ get_image_tag <- function(imagename) {
 
 #
 server <- function(input, output, session) {
+  memory.limit(size = 250000)
+  shinyDirChoose(
+    input,
+    'dir',
+    roots = c(home = getwd()),
+    filetypes = c('', 'jpg', 'jpeg', 'png','wav', 'mp4')
+  )
   
+  global <- reactiveValues(datapath = getwd())
+  
+  dir <- reactive(input$dir)
+  
+  output$dir <- renderText({
+    global$datapath
+  })
+  
+  
+  observeEvent(ignoreNULL = TRUE,
+               eventExpr = {
+                 input$dir
+               },
+               handlerExpr = {
+                 if (!"path" %in% names(dir())) return()
+                 home <- normalizePath("~")
+                 global$datapath <- getwd()
+                 
+                 Normal_path <- paste0(global$datapath,"/Test/Normal")
+                 Anomaly_path <- paste0(global$datapath,"/Test/Anomaly")
+                 Normal_path <<- gsub("\\", "/", as.character(Normal_path), fixed=TRUE)
+                 Anomaly_path <<- gsub("\\", "/", as.character(Anomaly_path), fixed=TRUE)
+                 
+               })
 
   #sampleplot 1
   output$emotionovertime <- renderPlotly({
@@ -81,7 +125,7 @@ server <- function(input, output, session) {
     data_sample <- data_sample[1190:1230,]
     data_sample$Price <- 30
     fig <- plot_ly(data_sample, x=~X, y = ~Price, name = 'Value', type = 'scatter', mode = 'lines')
-
+    
     fig <- fig %>% add_trace(y = ~meanf, name = 'Anger', mode = 'lines')
     fig <- fig %>% add_trace(y = ~naive, name = 'Happy', mode = 'lines')
     fig <- fig %>% add_trace(y = ~snaive, name = 'Disgust', mode = 'lines')
@@ -94,20 +138,7 @@ server <- function(input, output, session) {
   })
   
   #sampleplot2
-  output$emotionsummarised <- renderPlotly({
-    
-    Animals <- c("Anger", "Happy", "Disgust", "Trust", "Annoyed", "Sad", "Hungry","Hangry")
-    SF_Zoo <- c(20, 14, 23,14, 16, 23,18, 11)
-    LA_Zoo <- c(12, 18, 17,20, 10, 21,21, 12)
-    data <- data.frame(Animals, SF_Zoo, LA_Zoo)
-    
-    fig <- plot_ly(data, x = ~Animals, y = ~SF_Zoo, type = 'bar', name = 'Audio')
-    fig <- fig %>% add_trace(y = ~LA_Zoo, name = 'Video')
-    fig <- fig %>% layout(yaxis = list(title = 'Count'), barmode = 'group')
-    
-    fig
-  
-  })
+
   
   #helper functions
   get_audio_tag<-function(filename){tags$audio(src = filename,
@@ -119,11 +150,18 @@ server <- function(input, output, session) {
   path <- paste0(getwd(),"/www/data")
   file_selected <- NA
   memory.limit(size = 250000)
-
+  
   #file overview
   observeEvent(input$loadButton, {
     #list & load files
-    files <- list.files(path)
+    path <- ""
+    for(i in 1:length(paste0(getwd(),"/",input$dir$path))){
+      path <- paste0(path,"/",input$dir$path[i])
+    }
+    path <- gsub("//","/", path)
+    files <- list.files(paste0(getwd(),"/",path))
+    
+    #input$dir$path[length(paste0(getwd(),"/",input$dir$path))]
     files_list <- list()
     df_files <- data.frame("File" = character())
     for(file in 1:length(files)){
@@ -132,38 +170,110 @@ server <- function(input, output, session) {
       df_files <- rbind(df_files, files[file])
       names(df_files) <- "Datei"
     }
-
+    df_files$Herkunft <- paste0(getwd(),path)
+    df_files <<- df_files
+    output$FileTable <- renderDataTable(df_files,selection=list(mode="single"),options= list(scrollY = TRUE,pageLength = 5))
+  })
+  observeEvent(input$testButton, {
+    
+    
+  })
+  observeEvent(input$testButton, {
+    path <- paste0(getwd(),"/www/testdata_general/audio")
+    #list & load files
+    files <- list.files(path)
+    files_list <- list()
+    df_files_audio <- data.frame("File" = character(), "Origin" = character())
+    for(file in 1:length(files)){
+      file_path <- paste0(path,"/",files[file])
+      df_files_audio[,1] <- as.character(df_files_audio[,1])
+      df_files_audio <- rbind(df_files_audio, c(files[file], path))
+      names(df_files_audio) <- "Datei"
+    }
+    path <- paste0(getwd(),"/www/testdata_general/video")
+    files <- list.files(path)
+    files_list <- list()
+    df_files_video <- data.frame("File" = character(), "Origin" = character())
+    for(file in 1:length(files)){
+      file_path <- paste0(path,"/",files[file])
+      df_files_video[,1] <- as.character(df_files_video[,1])
+      df_files_video <- rbind(df_files_video, c(files[file],path))
+      names(df_files_video) <- "Datei"
+    }
+    df_files <- rbind(df_files_video, df_files_audio)
+    names(df_files) <- c("Datei", "Herkunft")
     df_files <<- df_files
     output$FileTable <- renderDataTable(df_files,selection=list(mode="single"),options= list(scrollY = TRUE,pageLength = 5))
   })
   
+  observeEvent(input$transformButton, {
+    try(source_python("skript_wav_png_transform.py"))
+    path_of_file <- strsplit(as.character(df_files$Herkunft), "www/")
+    path_of_file <- path_of_file[[1]][2]
+    files <- list.files("www/wav_transform/audio")
+    for(file in files){
+      unlink(paste0("www/wav_transform/audio/",file))
+    }
+    files <- list.files("www/wav_transform/untransformed_wavs")
+    for(file in files){
+      unlink(paste0("www/wav_transform/untransformed_wavs/",file))
+    }
+    files <- list.files(paste0("www/",path_of_file))
+    for(file in files){
+      if(grepl("\\.wav$", file)){
+        file.copy(file, paste0("www/wav_transform/untransformed_wavs/",file))
+      }
+
+    }
+
+    
+
+    
+
+    precompute_spectrograms()
+    
+  })
   #wav & video to app import
   observeEvent(input$FileTable_rows_selected, {
+    names(df_files) <- c("Datei", "Herkunft")
     file_selected <- paste0("data/",df_files$Datei[input$FileTable_rows_selected])
+    #actions for png
+    if(grepl("\\png$", df_files$Datei[input$FileTable_rows_selected])){
+      path_of_file <- strsplit(as.character(df_files$Herkunft[input$FileTable_rows_selected]), "www/")
+      image_selected <- paste0(path_of_file[[1]][2],"/",df_files$Datei[input$FileTable_rows_selected])
+      img_name = image_selected
+      output$my_image <-renderUI(get_image_tag(img_name))
+      output$imagetag<-renderUI(get_image_tag("tempimg.jpg")) #starting jpg file
+      output$imagetag<-renderUI(get_image_tag(imgname))
+    }
+    
+    #actions for .wav
     if(grepl("\\.wav$", df_files$Datei[input$FileTable_rows_selected])){
 
       wav_name = file_selected
       # output$my_audio <-renderUI(get_audio_tag("questionF.mp3"))
       output$my_audio <-renderUI(get_audio_tag(wav_name))
-      output$audiotag<-renderUI(get_audio_tag("tempwav.wav")) #starting wave file    
+      output$audiotag<-renderUI(get_audio_tag("tempwav.wav")) #starting wave file
       output$audiotag<-renderUI(get_audio_tag(wavname))
       output$my_image <-renderUI(tags$h1("")) #get_image_tag("placeholder.jpg")
       df_placeholder <- data.frame("Bild" = as.character())
       output$ImageTable <- renderDataTable(df_placeholder,selection=list(mode="single"),options= list(scrollY = TRUE,pageLength = 5))
     }
-
-
-    #actions for video
+    
+    #actions for .mp4
+    browser()
     if(grepl("\\.mp4$", df_files$Datei[input$FileTable_rows_selected])){
-
+      path_of_file <- strsplit(as.character(df_files$Herkunft), "www/")
       #extract images & wav from mp4
-      av_video_images(paste0("www/data/",df_files$Datei[input$FileTable_rows_selected]), destdir = "www/image_dir", format = "jpg", fps = 5)
-      #Define the file name that will be deleted
-      unlink("www/data/Temp_Current_Video")
-      dir.create("www/data/Temp_Current_Video")
-      if (file.exists("current_video.wav")) {file.remove("current_video.wav")}
+      files <- list.files("www/image_dir")
+      for(file in files){
+        unlink(paste0("www/image_dir/",file))
+      }
+      av_video_images(paste0("www/",path_of_file[[input$FileTable_rows_selected]][2],"/",df_files$Datei[input$FileTable_rows_selected]), destdir = "www/image_dir", format = "png")
       
-      av_audio_convert(paste0("www/data/",df_files$Datei[input$FileTable_rows_selected]), 'current_video.wav', channels = NULL)
+      #Define the file name that will be deleted
+      unlink("www/data/Temp_Current_Video/current_video.wav")
+      av_audio_convert(paste0("www/",path_of_file[[input$FileTable_rows_selected]][2],"/",df_files$Datei[input$FileTable_rows_selected]), 'current_video.wav', channels = NULL)
       file.copy("current_video.wav", "www/data/Temp_Current_Video/current_video.wav")
       images <- list.files("www/image_dir")
       files_list <- list()
@@ -174,6 +284,12 @@ server <- function(input, output, session) {
         df_images <- rbind(df_images, images[file])
         names(df_images) <- "Bild"
       }
+      wav_name = "data/Temp_Current_Video/current_video.wav"
+      # output$my_audio <-renderUI(get_audio_tag("questionF.mp3"))
+      output$my_audio <-renderUI(get_audio_tag(wav_name))
+      output$audiotag<-renderUI(get_audio_tag("tempwav.wav")) #starting wave file
+      output$audiotag<-renderUI(get_audio_tag(wavname))
+      
       #export everything to global env.
       allglobal <- function() {
         lss <- ls(envir = parent.frame())
@@ -183,15 +299,9 @@ server <- function(input, output, session) {
       }
       allglobal()
       output$ImageTable <- renderDataTable(df_images,selection=list(mode="single"),options= list(scrollY = TRUE,pageLength = 5))
-      file_selected <- "data/Temp_Current_Video/current_video.wav"
-      wav_name = file_selected
-      # output$my_audio <-renderUI(get_audio_tag("questionF.mp3"))
-      output$my_audio <-renderUI(get_audio_tag(wav_name))
-      output$audiotag<-renderUI(get_audio_tag("tempwav.wav")) #starting wave file    
-      output$audiotag<-renderUI(get_audio_tag(wavname))
     }
     
-
+    
   })
   
   #Loading  & showing images improted from video
@@ -199,7 +309,7 @@ server <- function(input, output, session) {
     image_selected <- paste0("image_dir/",df_images$Bild[input$ImageTable_rows_selected])
     img_name = image_selected
     output$my_image <-renderUI(get_image_tag(img_name))
-    output$imagetag<-renderUI(get_image_tag("tempimg.jpg")) #starting jpg file    
+    output$imagetag<-renderUI(get_image_tag("tempimg.jpg")) #starting jpg file
     output$imagetag<-renderUI(get_image_tag(imgname))
   })
   
@@ -207,29 +317,98 @@ server <- function(input, output, session) {
   
   
   
-
   
   
   
   
   
-  
-  
-  observeEvent(input$VGGstartButton, {
-    source_python("model_skript_vgg.py")
-    df_CAD <- check_images("C:/Users/Marc/Documents/GitHub/CAD_Pneumony_Detection")
-    df_CAD$classification <- as.numeric(df_CAD$classification)
-    df_CAD$classification <- ifelse(df_CAD$classification == 0, "Anomaly", "Normal")
-    df_CAD$percentages_0 <- round(as.numeric(df_CAD$percentages_0) * 100, 2)
-    df_CAD$percentages_1 <- round(as.numeric(df_CAD$percentages_1) * 100, 2)
-    names(df_CAD) <- c("Bild", "Diagnose CAD", "Ergebnis Anomaly", "Ergebnis Normal")
-    df_CAD <- left_join(df_images, df_CAD, by="Bild")
-    df_CAD$Ergebnis <- ifelse(df_CAD$`Diagnose Mensch`==df_CAD$`Diagnose CAD`, "identisch", "unterschiedlich")
-    output$CADTable <- renderDataTable(df_CAD,options= list(scrollY = TRUE,pageLength = 5))
-    output$ImageTable2 <- renderDataTable(df_CAD,options= list(scrollY = TRUE,pageLength = 5))
+  observeEvent(input$loadModels, {
+    
+    source_python("skript_video_class.py")
+    Sys.sleep(3)
+    source_python("skript_audio_class.py")
     
   })
+  
+  
+  observeEvent(input$startButton, {
+    try(source_python("skript_video_class.py"))
+    try(source_python("skript_audio_class.py"))
+    path_of_file <- strsplit(as.character(df_files$Herkunft), "www/")
+    audio_path <- paste0("www/",path_of_file[[1]][2],"/audio")
+    video_path <- paste0("www/",path_of_file[[1]][2],"/video")
+    audio_path <- gsub("/audio","",audio_path)
+    video_path <- gsub("/video","",video_path)
+    audio_path <- gsub("/video","",audio_path)
+    video_path <- gsub("/audio","",video_path)
+    audio_path <- paste0(audio_path,"/audio")
+    video_path <- paste0(video_path,"/video")
+    try(df_audio <- check_wav(audio_path))
+    try(df_video <- check_img(video_path))
+    try(df_audio <- df_audio[,c(1,2,3,5,6,7,8,9,10,4)])
+    try(df_video <- df_video[,c(1,2,8,7,9,3,6,5,10,4)])
+    try(names(df_video) <- c("file","classification","neutral","happy","sad","angry","fear","disgust","surprise","contempt"))
+    if(!exists("df_audio")){df_audio <- data.frame("file"=as.character(),"classification"=as.character(),"neutral"=as.character(),
+                                                     "happy"=as.character(),"sad"=as.character(),"angry"=as.character()
+                                                     ,"fear"=as.character(),"disgust"=as.character(),"surprise"=as.character(),"contempt"=as.character())}
+    if(!exists("df_video")){df_video <- data.frame("file"=as.character(),"classification"=as.character(),"neutral"=as.character(),
+                                                     "happy"=as.character(),"sad"=as.character(),"angry"=as.character()
+                                                     ,"fear"=as.character(),"disgust"=as.character(),"surprise"=as.character(),"contempt"=as.character())}
+    output$VoiceEmotion <- renderDataTable(df_audio,options= list(scrollY = TRUE,pageLength = 5))
+    output$ImageEmotion <- renderDataTable(df_video,options= list(scrollY = TRUE,pageLength = 5))
+    output$emotionsummarised <- renderPlotly({
+      df_audio_table <<- data.frame("neutral"=0,"happy"=0,"sad"=0,"angry"=0
+                                   ,"fear"=0,"disgust"=0,"surprise"=0,"contempt"=0)
+      df_video_table <<- data.frame("neutral"=0,"happy"=0,"sad"=0,"angry"=0
+                                   ,"fear"=0,"disgust"=0,"surprise"=0,"contempt"=0)
+
+      df_audio_summary <<- table(df_audio$classification)
+      df_video_summary <<- table(df_video$classification)
+
+
+      for(i in 1:length(df_audio_table)){
+        if(names(df_audio_table)[i] %in% names(df_audio_summary)){
+          print(names(df_audio_table)[i])
+          print(names(df_audio_summary))
+          df_audio_table[1,i] <- as.numeric(df_audio_summary[names(df_audio_table)[i]])
+        }
+      }
+      
+      for(i in 1:length(df_video_table)){
+        if(names(df_video_table)[i] %in% names(df_video_summary)){
+          print(names(df_video_table)[i])
+          print(names(df_video_summary))
+          df_video_table[1,i] <- as.numeric(df_video_summary[names(df_video_table)[i]])
+        }
+      }
+      
+      emotions_summary_df <<- cbind(df_audio_table, df_video_table)
+      Emotions <<- c("neutral","happy","sad","angry","fear","disgust","surprise","contempt")
+      Emotions_Audio_Summary <<- table(df_audio$classification)
+        
+      Emotions_Video_Summary <<- table(df_audio$classification)
+      audio_vector <- c(df_audio_table$neutral[1],df_audio_table$happy[1],df_audio_table$sad[1],df_audio_table$angry[1],
+                        df_audio_table$fear[1],df_audio_table$disgust[1],df_audio_table$surprise[1],df_audio_table$contempt[1])
+      video_vector <- c(df_video_table$neutral[1],df_video_table$happy[1],df_video_table$sad[1],df_video_table$angry[1],
+                        df_video_table$fear[1],df_video_table$disgust[1],df_video_table$surprise[1],df_video_table$contempt[1])
+      overview_plot_data <<- data.frame(Emotions, audio_vector, video_vector)
+      
+      fig <- plot_ly(overview_plot_data, x = ~Emotions, y = ~audio_vector, type = 'bar', name = 'Audio')
+      fig <- fig %>% add_trace(y = ~video_vector, name = 'Video')
+      fig <- fig %>% layout(yaxis = list(title = 'Count'), barmode = 'group')
+      
+      fig
+      
+
+    })
+  })
+  
+  
+  
+  
   
 }
 
 shinyApp(ui, server)
+
+
