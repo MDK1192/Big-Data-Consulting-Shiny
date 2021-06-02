@@ -45,7 +45,7 @@ def check_img(path):
   percentages_6 = []
   percentages_7 = []
 
-  model = tf.keras.models.load_model("model_test.h5")
+  model = tf.keras.models.load_model("video_model.h5")
 
   image_list=os.listdir(PATH_TO_FILE)
   for i in range(len(image_list)):
