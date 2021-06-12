@@ -43,7 +43,7 @@ def check_img(path):
   percentages_4 = []
   percentages_5 = []
   percentages_6 = []
-  percentages_7 = []
+
 
   model = tf.keras.models.load_model("video_model.h5")
 
@@ -52,7 +52,7 @@ def check_img(path):
     PATH_TO_IMAGE = PATH_TO_FILE / image_list[i]
     print(PATH_TO_IMAGE)
     image_list[i]=keras.preprocessing.image.load_img(PATH_TO_IMAGE, target_size=(64, 64))
-  class_names = ['angry', 'contempt', 'disgust', 'fear', 'happy', 'neutral', 'sad', 'surprise']
+  class_names = ['angry', 'disgust', 'fear', 'happy', 'neutral', 'sad', 'surprise']
   result_list = []
   for i in range(0, len(image_list)):
 
@@ -61,26 +61,25 @@ def check_img(path):
     predictions = model.predict(img_array)
     score = tf.nn.softmax(predictions[0])
     result = []
-    for i in range(0, 8):
+    for i in range(0, 7):
       result.append(float(score[i]))
     result_list.append(result)
   #return result_list
 
   for i in range(0, len(result_list)):
     classification.extend([class_names[np.argmax(result_list[i])]])
-    percentages_0.extend([str(round(result_list[i][0],4))])
-    percentages_1.extend([str(round(result_list[i][1],4))])
-    percentages_2.extend([str(round(result_list[i][2],4))])
-    percentages_3.extend([str(round(result_list[i][3],4))])
-    percentages_4.extend([str(round(result_list[i][4],4))])
-    percentages_5.extend([str(round(result_list[i][5],4))])
-    percentages_6.extend([str(round(result_list[i][6],4))])
-    percentages_7.extend([str(round(result_list[i][7],4))])
+    percentages_0.extend([str(round(result_list[i][0],3))])
+    percentages_1.extend([str(round(result_list[i][1],3))])
+    percentages_2.extend([str(round(result_list[i][2],3))])
+    percentages_3.extend([str(round(result_list[i][3],3))])
+    percentages_4.extend([str(round(result_list[i][4],3))])
+    percentages_5.extend([str(round(result_list[i][5],3))])
+    percentages_6.extend([str(round(result_list[i][6],3))])
+
     
 
-  data = {'file': files, 'classification': classification, 'angry': percentages_0, 'contempt': percentages_1, 'disgust': percentages_2,
-  'fear': percentages_3,'happy': percentages_4,
-  'neutral': percentages_5,'sad': percentages_6, 'surprise': percentages_7}
+  data = {'file': files, 'classification': classification, 'angry': percentages_0,'disgust': percentages_1,
+  'fear': percentages_2,'happy': percentages_3,'neutral': percentages_4,'sad': percentages_5, 'surprise': percentages_6}
   df_results = pd.DataFrame(data=data)
   return df_results
 

@@ -34,8 +34,8 @@ def check_wav(path):
             full_file_name = os.path.join(PATH_TO_FILE, file_name)
             if os.path.isfile(full_file_name):
                 shutil.copy(full_file_name, newpath)
-        
-        class_names=['neutral','calm','happy','sad','angry','fear','disgust','surprise']
+  
+        class_names=['neutral','happy','sad','angry','fear','disgust','surprise']
         classification = []
         percentages_0 = []
         percentages_1 = []
@@ -44,7 +44,7 @@ def check_wav(path):
         percentages_4 = []
         percentages_5 = []
         percentages_6 = []
-        percentages_7 = []
+
         
         #load model
         model = torch.load('audio_model.pth')
@@ -57,7 +57,7 @@ def check_wav(path):
                                                         [0.229, 0.224, 0.225])])
 
         images = datasets.ImageFolder(PATH_TO_FILE, transform =image_transformed)
-        image_loader = torch.utils.data.DataLoader(images, batch_size=279)
+        image_loader = torch.utils.data.DataLoader(images, batch_size=1000)
         model.eval()
         images, labels = next(iter(image_loader))
         images, labels, model = images.to(device),labels.to(device), model.to(device)
@@ -70,21 +70,21 @@ def check_wav(path):
 
           score = tf.nn.softmax(ps.tolist()[i])
           classification.extend([class_names[np.argmax(score.numpy())]])
-          percentages_0.extend([str(round(score.numpy()[0],4))])
-          percentages_1.extend([str(round(score.numpy()[1],4))])
-          percentages_2.extend([str(round(score.numpy()[2],4))])
-          percentages_3.extend([str(round(score.numpy()[3],4))])
-          percentages_4.extend([str(round(score.numpy()[4],4))])
-          percentages_5.extend([str(round(score.numpy()[5],4))])
-          percentages_6.extend([str(round(score.numpy()[6],4))])
-          percentages_7.extend([str(round(score.numpy()[7],4))])
+          percentages_0.extend([str(round(score.numpy()[0],3))])
+          percentages_1.extend([str(round(score.numpy()[1],3))])
+          percentages_2.extend([str(round(score.numpy()[2],3))])
+          percentages_3.extend([str(round(score.numpy()[3],3))])
+          percentages_4.extend([str(round(score.numpy()[4],3))])
+          percentages_5.extend([str(round(score.numpy()[5],3))])
+          percentages_6.extend([str(round(score.numpy()[6],3))])
+
         
         for f in os.listdir(newpath):
           os.remove(os.path.join(newpath, f))
         os.rmdir(newpath)
-        data = {'file': files,'classification': classification, 'neutral': percentages_0, 'calm': percentages_1,
-        'happy': percentages_2, 'sad': percentages_3,'angry': percentages_4,
-        'fear': percentages_5,'disgust': percentages_6, 'surprise': percentages_7}
+        data = {'file': files,'classification': classification, 'neutral': percentages_0,
+        'happy': percentages_1, 'sad': percentages_2,'angry': percentages_3,
+        'fear': percentages_4,'disgust': percentages_5, 'surprise': percentages_6}
         df_results = pd.DataFrame(data=data)
         return df_results
 
