@@ -23,7 +23,9 @@ from pathlib import Path
 from torch.utils.data import Dataset, DataLoader
 import shutil
 
+
 def check_wav(path):
+
         PATH_TO_FILE = Path.cwd() / path
         files = os.listdir(PATH_TO_FILE)
         newpath = PATH_TO_FILE / 'temp'
@@ -31,11 +33,11 @@ def check_wav(path):
           os.makedirs(newpath)
         
         for file_name in files:
-            full_file_name = os.path.join(PATH_TO_FILE, file_name)
-            if os.path.isfile(full_file_name):
-                shutil.copy(full_file_name, newpath)
+          full_file_name = os.path.join(PATH_TO_FILE, file_name)
+          if os.path.isfile(full_file_name):
+              shutil.copy(full_file_name, newpath)
   
-        class_names=['neutral','happy','sad','angry','fear','disgust','surprise']
+        class_names = ['neutral','happy','sad','angry','fear','surprise']
         classification = []
         percentages_0 = []
         percentages_1 = []
@@ -43,7 +45,6 @@ def check_wav(path):
         percentages_3 = []
         percentages_4 = []
         percentages_5 = []
-        percentages_6 = []
 
         
         #load model
@@ -76,15 +77,13 @@ def check_wav(path):
           percentages_3.extend([str(round(score.numpy()[3],3))])
           percentages_4.extend([str(round(score.numpy()[4],3))])
           percentages_5.extend([str(round(score.numpy()[5],3))])
-          percentages_6.extend([str(round(score.numpy()[6],3))])
 
-        
         for f in os.listdir(newpath):
           os.remove(os.path.join(newpath, f))
         os.rmdir(newpath)
         data = {'file': files,'classification': classification, 'neutral': percentages_0,
         'happy': percentages_1, 'sad': percentages_2,'angry': percentages_3,
-        'fear': percentages_4,'disgust': percentages_5, 'surprise': percentages_6}
+        'fear': percentages_4,'surprise': percentages_5}
         df_results = pd.DataFrame(data=data)
         return df_results
 

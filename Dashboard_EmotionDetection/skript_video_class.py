@@ -9,11 +9,6 @@ Created on Sat Dec  5 11:05:46 2020
 import numpy as np
 import pandas as pd
 pd.set_option('display.expand_frame_repr', False)
-
-#import matplotlib.pyplot as plt
-#%matplotlib inline
-#import pathlib
-
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -23,6 +18,7 @@ import json
 import os
 from torch import nn
 from torch import optim
+from IPython.display import display
 from PIL import Image
 from torchvision import datasets, transforms, models
 from collections import OrderedDict
@@ -33,6 +29,7 @@ from torch.utils.data import Dataset, DataLoader
 def check_img(path):
 
   PATH_TO_FILE = Path.cwd() / path
+  PATH_TO_FILE="www/sample/video"
   files = os.listdir(PATH_TO_FILE)
 
   classification = []
@@ -42,17 +39,18 @@ def check_img(path):
   percentages_3 = []
   percentages_4 = []
   percentages_5 = []
-  percentages_6 = []
 
 
   model = tf.keras.models.load_model("video_model.h5")
 
   image_list=os.listdir(PATH_TO_FILE)
+
   for i in range(len(image_list)):
-    PATH_TO_IMAGE = PATH_TO_FILE / image_list[i]
+    #PATH_TO_IMAGE = PATH_TO_FILE / image_list[i]
+    PATH_TO_IMAGE=PATH_TO_FILE +"/"+ image_list[i]
     print(PATH_TO_IMAGE)
-    image_list[i]=keras.preprocessing.image.load_img(PATH_TO_IMAGE, target_size=(64, 64))
-  class_names = ['angry', 'disgust', 'fear', 'happy', 'neutral', 'sad', 'surprise']
+    image_list[i]=keras.preprocessing.image.load_img(PATH_TO_IMAGE, target_size=(150, 150))
+  class_names = ['angry', 'fear', 'happy', 'neutral', 'sad', 'surprise']
   result_list = []
   for i in range(0, len(image_list)):
 
@@ -61,7 +59,7 @@ def check_img(path):
     predictions = model.predict(img_array)
     score = tf.nn.softmax(predictions[0])
     result = []
-    for i in range(0, 7):
+    for i in range(0, 6):
       result.append(float(score[i]))
     result_list.append(result)
   #return result_list
@@ -74,12 +72,12 @@ def check_img(path):
     percentages_3.extend([str(round(result_list[i][3],3))])
     percentages_4.extend([str(round(result_list[i][4],3))])
     percentages_5.extend([str(round(result_list[i][5],3))])
-    percentages_6.extend([str(round(result_list[i][6],3))])
+
 
     
 
-  data = {'file': files, 'classification': classification, 'angry': percentages_0,'disgust': percentages_1,
-  'fear': percentages_2,'happy': percentages_3,'neutral': percentages_4,'sad': percentages_5, 'surprise': percentages_6}
+  data = {'file': files, 'classification': classification, 'angry': percentages_0,'happy': percentages_1,
+  'fear': percentages_2,'neutral': percentages_3,'sad': percentages_4,'surprise': percentages_5}
   df_results = pd.DataFrame(data=data)
   return df_results
 

@@ -6,8 +6,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import os
-from PyQt5 import QtCore, QtGui, QtWidgets
-os.environ["QT_API"] = "pyqt5" 
+#from PyQt5 import QtCore, QtGui, QtWidgets
+#os.environ["QT_API"] = "pyqt5" 
 
 def precompute_spectrograms(dpi=50):
     dpi = 50

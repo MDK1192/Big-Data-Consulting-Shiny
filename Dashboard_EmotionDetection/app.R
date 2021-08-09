@@ -31,7 +31,7 @@ ui <- dashboardPage(
               h2("Landingpage"),
               box(width = 12,
                   box(width = 4,
-                      shinyDirButton("dir", "Dateien waehlen", "Upload", width = '100%'),
+                      shinyDirButton("dir", "Dateien wählen", "Upload", width = '100%'),
                       verbatimTextOutput("dir", placeholder = TRUE),
                       #fileInput("file", label = h3("Choose custom path")),
                       #verbatimTextOutput("value")
@@ -102,22 +102,6 @@ server <- function(input, output, session) {
     global$datapath
   })
   
-  observeEvent(ignoreNULL = TRUE,
-               eventExpr = {
-                 input$dir
-               },
-               handlerExpr = {
-                 if (!"path" %in% names(dir())) return()
-                 home <- normalizePath("~")
-                 global$datapath <- getwd()
-                 
-                 Normal_path <- paste0(global$datapath,"/Test/Normal")
-                 Anomaly_path <- paste0(global$datapath,"/Test/Anomaly")
-                 Normal_path <<- gsub("\\", "/", as.character(Normal_path), fixed=TRUE)
-                 Anomaly_path <<- gsub("\\", "/", as.character(Anomaly_path), fixed=TRUE)
-                 
-               })
-
 
   
   #helper functions fuer .wav und .png display
@@ -126,7 +110,11 @@ server <- function(input, output, session) {
   get_image_tag<-function(imagename){
     tags$img(width="100%", height="100%", src = imagename)}
   
-
+#Definieren von Filesystempfaden
+  #!/www Ordner ist obligarotisch um mit tags$xyz interagieren zu können!
+current_files_folder  <- "current_files"
+current_video_folder <- "Temp_Current_Video"
+wav_transform_folder <- "wav_transform"  
 #Logik fuer importvorgaenge von Dateien
   observeEvent(input$loadButton, {
 
@@ -168,18 +156,21 @@ server <- function(input, output, session) {
     }
 
   })
-
+  
 #Logik fuer Overtime Plots der App
   observeEvent(input$showemotionovertime, {
+
+    show("emotionovertime_audio")
+    show("emotionovertime_video")
     #template generierung falls df nicht existieren
     if(!exists("df_audio")){df_audio <- data.frame("file"=as.character(),"classification"=as.character(),"neutral"=as.character(),
                                                    "happy"=as.character(),"sad"=as.character(),"angry"=as.character()
-                                                   ,"fear"=as.character(),"disgust"=as.character(),"surprise"=as.character(), "id"=as.character())}
+                                                   ,"fear"=as.character(),"surprise"=as.character(), "id"=as.character())}
     if(!exists("df_video")){df_video <- data.frame("file"=as.character(),"classification"=as.character(),"neutral"=as.character(),
                                                    "happy"=as.character(),"sad"=as.character(),"angry"=as.character()
-                                               ,"fear"=as.character(),"disgust"=as.character(),"surprise"=as.character(), "id"=as.character())}
+                                               ,"fear"=as.character(),"surprise"=as.character(), "id"=as.character())}
     
-    #Generierung und Ausgabe plots 
+    #Generierung und Ausgabe plots
     if(nrow(df_audio) != 0){output$emotionovertime_audio <- renderPlotly({
       df_audio$number <- seq(1,nrow(df_audio))
       fig <- plot_ly(df_audio, x=~number, y = ~neutral  , name = 'neutral', type = 'scatter', mode = 'markers')
@@ -187,7 +178,6 @@ server <- function(input, output, session) {
       fig <- fig %>% add_trace(y = ~sad  , name = 'sad', mode = 'markers')
       fig <- fig %>% add_trace(y = ~angry   , name = 'angry', mode = 'markers')
       fig <- fig %>% add_trace(y = ~fear , name = 'fear', mode = 'markers')
-      fig <- fig %>% add_trace(y = ~disgust , name = 'disgust', mode = 'markers')
       fig <- fig %>% add_trace(y = ~surprise   , name = 'surprise', mode = 'markers')
       fig <- fig %>% layout(hovermode = "x", xaxis = list(title="Objekt"), yaxis=list(title="Ergebnis"))
       fig
@@ -201,12 +191,11 @@ server <- function(input, output, session) {
       fig <- fig %>% add_trace(y = ~sad  , name = 'sad', mode = 'markers')
       fig <- fig %>% add_trace(y = ~angry   , name = 'angry', mode = 'markers')
       fig <- fig %>% add_trace(y = ~fear , name = 'fear', mode = 'markers')
-      fig <- fig %>% add_trace(y = ~disgust , name = 'disgust', mode = 'markers')
       fig <- fig %>% add_trace(y = ~surprise   , name = 'surprise', mode = 'markers')
       fig <- fig %>% layout(hovermode = "x", xaxis = list(title="Objekt"), yaxis=list(title="Ergebnis"))
       fig
       fig
-      
+
     })
     }
     })
@@ -218,18 +207,18 @@ server <- function(input, output, session) {
     #.wav dateien identifizieren und selektieren
     path_of_file <- strsplit(as.character(df_files$Herkunft), "www/")
     path_of_file <- path_of_file[[1]][2]
-    files <- list.files("www/current_files/audio")
+    files <- list.files(paste0("www/",current_files_folder ,"/audio"))
     for(file in files){
-      unlink(paste0("www/current_files/audio/",file))
+      unlink(paste0("www/",current_files_folder,"/audio/",file))
     }
-    files <- list.files("www/wav_transform/untransformed_wavs")
+    files <- list.files(paste0("www/",wav_transform_folder,"/untransformed_wavs"))
     for(file in files){
-      unlink(paste0("www/wav_transform/untransformed_wavs/",file))
+      unlink(paste0("www/",wav_transform_folder,"/untransformed_wavs/",file))
     }
     files <- list.files(paste0("www/",path_of_file))
     for(file in files){
       if(grepl("\\.wav$", file)){
-        file.copy(paste0("www/",path_of_file,"/",file), paste0("www/wav_transform/untransformed_wavs/",file))
+        file.copy(paste0("www/",path_of_file,"/",file), paste0("www/",wav_transform_folder,"/untransformed_wavs/",file))
       }
     }
     #transformationsfunktion ausfuehren
@@ -320,36 +309,35 @@ server <- function(input, output, session) {
       #filtern der datei
       path_of_file <- strsplit(as.character(df_files$Herkunft), "www/")
       #extract images & wav from mp4
-      files <- list.files("www/current_files/video")
+      files <- list.files(paste0("www/",current_files_folder,"/video"))
       #loeschen von vorherigen pfaden/dateien
       for(file in files){
-        unlink(paste0("www/current_files/video/",file))
+        unlink(paste0("www/",current_files_folder,"/video/",file))
       }
       #Frames aus Video generieren
-      av_video_images(paste0("www/",path_of_file[[input$FileTable_rows_selected]][2],"/",df_files$Datei[input$FileTable_rows_selected]), destdir = "www/current_files/video", format = "png")
+      av_video_images(paste0("www/",path_of_file[[input$FileTable_rows_selected]][2],"/",df_files$Datei[input$FileTable_rows_selected]), destdir = paste0("www/",current_files_folder,"/video"), format = "png")
       
-      unlink("www/current_files/Temp_Current_Video/current_video.wav")
+      unlink(paste0("www/",current_files_folder,"/",current_video_folder,"/current_video.wav"))
       #laenge des ausgewaehlten videos ableiten
       length_video <- av_media_info(paste0("www/",path_of_file[[input$FileTable_rows_selected]][2],"/",df_files$Datei[input$FileTable_rows_selected]))$duration
       
       #loeschen von vorherigen pfaden/dateien
-      files <- list.files("www/current_files/Temp_Current_Video")
+      files <- list.files(paste0("www/",current_files_folder,"/",current_video_folder))
       for(file in files){
-        unlink(paste0("www/current_files/Temp_Current_Video/",file))
+        unlink(paste0("www/",current_files_folder,"/",current_video_folder,"/",file))
       }
       #.wav aus ausgewaehlten video generieren
       for(i in 1:(round(length_video)/input$MP4slider)){
-        browser()
         start_time <- i-1
         video_name <- paste0('current_video_segment',i,'.wav')
-        unlink(paste0("www/current_files/Temp_Current_Video/",video_name))
+        unlink(paste0("www/",current_files_folder,"/",current_video_folder,"/",video_name))
         av_audio_convert(paste0("www/",path_of_file[[input$FileTable_rows_selected]][2],"/",df_files$Datei[input$FileTable_rows_selected]), start_time = start_time,total_time=input$MP4slider ,output = video_name, channels = NULL)
-        file.copy(video_name, paste0("www/current_files/Temp_Current_Video/",video_name))
+        file.copy(video_name, paste0("www/",current_files_folder,"/",current_video_folder,"/",video_name))
         
         }
 
       #bestehende dateien in current files auslesen
-      images <- list.files("www/current_files/video")
+      images <- list.files(paste0("www/",current_files_folder,"/video"))
       files_list <- list()
       #df erzeugen und bestehende dateien aufnehmen
       df_images <- data.frame("Image" = character())
@@ -360,7 +348,7 @@ server <- function(input, output, session) {
         names(df_images) <- "Bild"
       }
       #template .wav selektieren und in UI anzeigen
-      wav_name = "current_files/Temp_Current_Video/current_video_segment1.wav"
+      wav_name = paste0(current_files_folder,"/",current_video_folder,"/current_video_segment1.wav")
       # output$my_audio <-renderUI(get_audio_tag("questionF.mp3"))
       show("my_audio")
       output$my_audio <-renderUI(get_audio_tag(wav_name))
@@ -385,7 +373,7 @@ server <- function(input, output, session) {
 #Logik fuer Aktionen innerhalb der Tabelle mit aus .mp4 erzeugten Bildinhalten
   observeEvent(input$ImageTable_rows_selected, {
     #ausgewaehlte datei filtern
-    image_selected <- paste0("current_files/video/",df_images$Bild[input$ImageTable_rows_selected])
+    image_selected <- paste0(current_files_folder,"/video/",df_images$Bild[input$ImageTable_rows_selected])
     img_name = image_selected
     #datei in UI anzeigen
     show("my_image")
@@ -396,9 +384,14 @@ server <- function(input, output, session) {
   
 #Logik fuer Bildanalysen durch Mimik und Voice Emotion detection Modelle
   observeEvent(input$startButton, {
+
     #nicht benoetigte UI-Elemente verbergen
     hide("emotionovertime_audio")
     hide("emotionovertime_video")
+    hide("VoiceEmotionTable")
+    hide("ImageEmotionTable")
+    hide("my_image_audio")
+    hide("my_image_video")
     #exception falls df_files nicht existiert
     if(!exists("df_files")){
       shinyalert("Please Choose a folder first!",  type = "warning")
@@ -408,10 +401,10 @@ server <- function(input, output, session) {
     else{
       df_audio <- data.frame("file"=as.character(),"classification"=as.character(),"neutral"=as.character(),
                              "happy"=as.character(),"sad"=as.character(),"angry"=as.character()
-                             ,"fear"=as.character(),"disgust"=as.character(),"surprise"=as.character(),"number"=as.numeric())
+                             ,"fear"=as.character(),"surprise"=as.character(),"number"=as.numeric())
       df_video <- data.frame("file"=as.character(),"classification"=as.character(),"neutral"=as.character(),
                              "happy"=as.character(),"sad"=as.character(),"angry"=as.character()
-                             ,"fear"=as.character(),"disgust"=as.character(),"surprise"=as.character(),"number"=as.numeric())
+                             ,"fear"=as.character(),"surprise"=as.character(),"number"=as.numeric())
       
       #python skripte fuer modelle laden
       try(source_python("skript_video_class.py"))
@@ -441,17 +434,17 @@ server <- function(input, output, session) {
       #Bildinhalte klassifizieren und Ergebnisse fuer Visualisierung verarbeiten
       try(df_audio <- check_wav(audio_path))
       try(df_video <- check_img(video_path))
-      try(df_video <- df_video[,c(1,2,7,6,8,3,5,4,9)])
+      try(df_video <- df_video[,c(1,2,6,4,7,3,5,8)])
       try(df_audio$id <-paste0("img", as.character(seq(1:nrow(df_audio)))))
       try(df_video$id <-paste0("img", as.character(seq(1:nrow(df_video)))))
-      try(names(df_video) <- c("file","classification","neutral","happy","sad","angry","fear","disgust","surprise","id"))
-      try(names(df_video) <- c("file","classification","neutral","happy","sad","angry","fear","disgust","surprise","id"))
+      try(names(df_video) <- c("file","classification","neutral","happy","sad","angry","fear","surprise","id"))
+      try(names(df_video) <- c("file","classification","neutral","happy","sad","angry","fear","surprise","id"))
       if(!exists("df_audio")){df_audio <- data.frame("file"=as.character(),"number"=as.numeric(),"classification"=as.character(),"neutral"=as.character(),
                                                            "happy"=as.character(),"sad"=as.character(),"angry"=as.character()
-                                                           ,"fear"=as.character(),"disgust"=as.character(),"surprise"=as.character(),"number"=as.numeric())}
+                                                           ,"fear"=as.character(),"surprise"=as.character(),"number"=as.numeric())}
       if(!exists("df_video")){df_video <- data.frame("file"=as.character(),"number"=as.numeric(),"classification"=as.character(),"neutral"=as.character(),
                                                      "happy"=as.character(),"sad"=as.character(),"angry"=as.character()
-                                                     ,"fear"=as.character(),"disgust"=as.character(),"surprise"=as.character(),"number"=as.numeric())}
+                                                     ,"fear"=as.character(),"surprise"=as.character(),"number"=as.numeric())}
       
       #df in globale env. exportieren
       df_audio <<- df_audio
@@ -460,13 +453,16 @@ server <- function(input, output, session) {
       output$VoiceEmotionTable <- renderDataTable(df_audio,selection=list(mode="single"),options= list(scrollY = TRUE,pageLength = 5))
       output$ImageEmotionTable <- renderDataTable(df_video,selection=list(mode="single"),options= list(scrollY = TRUE,pageLength = 5))
 
+      show("VoiceEmotionTable")
+      show("ImageEmotionTable")
+      
       #plot fuer generelle overview der Ergebnisse
       output$emotionsummarised <- renderPlotly({
         #df fuer zusammenfassung anlegen
         df_audio_table <- data.frame("neutral"=0,"happy"=0,"sad"=0,"angry"=0
-                                     ,"fear"=0,"disgust"=0,"surprise"=0)
+                                     ,"fear"=0,"surprise"=0)
         df_video_table <- data.frame("neutral"=0,"happy"=0,"sad"=0,"angry"=0
-                                     ,"fear"=0,"disgust"=0,"surprise"=0)
+                                     ,"fear"=0,"surprise"=0)
         
         df_audio_summary <- table(df_audio$classification)
         df_video_summary <- table(df_video$classification)
@@ -486,14 +482,14 @@ server <- function(input, output, session) {
         }
         #Ergebnisse fuer Visualisierung vorbereiten und in UI anzeigen
         emotions_summary_df <- cbind(df_audio_table, df_video_table)
-        Emotionen <- c("neutral","happy","sad","angry","fear","disgust","surprise")
+        Emotionen <- c("neutral","happy","sad","angry","fear","surprise")
         Emotions_Audio_Summary <- table(df_audio$classification)
         
         Emotions_Video_Summary <- table(df_audio$classification)
         audio_vector <- c(df_audio_table$neutral[1],df_audio_table$happy[1],df_audio_table$sad[1],df_audio_table$angry[1],
-                          df_audio_table$fear[1],df_audio_table$disgust[1],df_audio_table$surprise[1])
+                          df_audio_table$fear[1],df_audio_table$surprise[1])
         video_vector <- c(df_video_table$neutral[1],df_video_table$happy[1],df_video_table$sad[1],df_video_table$angry[1],
-                          df_video_table$fear[1],df_video_table$disgust[1],df_video_table$surprise[1])
+                          df_video_table$fear[1],df_video_table$surprise[1])
         overview_plot_data <- data.frame(Emotionen, audio_vector, video_vector)
         
         fig <- plot_ly(overview_plot_data, x = ~Emotionen, y = ~audio_vector, type = 'bar', name = 'Audio')
@@ -504,6 +500,7 @@ server <- function(input, output, session) {
         
         
       })
+
     }
 
   })
