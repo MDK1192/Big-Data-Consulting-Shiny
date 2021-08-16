@@ -1,2 +1,2 @@
 # Big-Data-Consulting-Shiny
-A Repository for the Big Data Consulting Projects Shiny App
+Ein Repository, um die fertige Shinyanwendung für das Modul Big Data Consultingprojekt zu teilen.
